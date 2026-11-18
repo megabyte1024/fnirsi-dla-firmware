@@ -31,7 +31,7 @@ Files that script `dla16_flash.py` writes through each bootloader:
 | Project firmware (`build/dla16_firmware.bin`, MCU firmware only) | refused: FNIRSI bootloader installs MCU firmware only when FPGA firmware comes with it | works |
 | FNIRSI MCU firmware alone (separate file, taken out of FNIRSI firmware file with script `dla16_pack.py`) | refused | works |
 | FPGA firmware alone | refused | works |
-| FNIRSI firmware file of DLA-32 Plus | refused | refused by `full` and `fpga`; `firmware` takes only its MCU firmware, which is the same as in DLA-16 Plus file |
+| FNIRSI firmware file of DLA-32 Plus | refused | refused by `full` and `fpga`; `mcu` takes only its MCU firmware, which is the same as in DLA-16 Plus file |
 | File with unknown FPGA firmware (for example newer FNIRSI version) | refused unless `--force` | refused unless `--force` |
 | Unknown MCU firmware alone (for example firmware from another project) | refused | works |
 
@@ -61,15 +61,17 @@ bootloader is available for tests now.
 Common to every platform:
 
 - CMake 3.25 or newer and Ninja
-- xPack GNU RISC-V Embedded GCC (built and tested with 15.2.0), see "How to compile" for how to name its folder
+- xPack GNU RISC-V Embedded GCC (built and tested with 15.2.0), its `bin` folder on `PATH`
 - Git, to fetch the two USB library submodules in `third_party/`
 - Python 3.10 or newer, to install the firmware on the analyzer (packages: see "Install")
 
 ## How to compile
 
 The compiler is the [xPack GNU RISC-V Embedded GCC](https://xpack-dev-tools.github.io/riscv-none-elf-gcc-xpack/).
-Unpack it in any folder and add `-Dxpack_bin=<its bin folder>` to the first `cmake` command below. On Linux and macOS
-this may be left out when `riscv-none-elf-gcc` is on your `PATH`.
+Unpack it in any folder and add its `bin` folder to your `PATH`. Instead of `PATH`, the folder can also be named
+in the first `cmake` command: add `-Dxpack_bin=<its bin folder>`, in PowerShell in quotes: `"-Dxpack_bin=<its bin folder>"`.
+
+Linux and macOS:
 
 ```sh
 git clone https://github.com/megabyte1024/fnirsi-dla-firmware.git
@@ -79,10 +81,29 @@ cmake -S . -B build -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/riscv-none-elf.cmake -
 cmake --build build
 ```
 
-The commands are the same on Linux and Windows (in Command Prompt or PowerShell). In an existing clone run only
-`git submodule update --init`. Do not add `--recursive` (neither to `git clone` nor to `git submodule update`): it also
-fetches test repositories of the libraries, which the build does not need, and one of them can only be fetched over SSH
-with GitHub key.
+Windows, Command Prompt:
+
+```bat
+git clone https://github.com/megabyte1024/fnirsi-dla-firmware.git
+cd fnirsi-dla-firmware
+git submodule update --init
+cmake -S . -B build -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/riscv-none-elf.cmake -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+```
+
+Windows, PowerShell:
+
+```powershell
+git clone https://github.com/megabyte1024/fnirsi-dla-firmware.git
+cd fnirsi-dla-firmware
+git submodule update --init
+cmake -S . -B build -G Ninja "-DCMAKE_TOOLCHAIN_FILE=cmake/riscv-none-elf.cmake" "-DCMAKE_BUILD_TYPE=Release"
+cmake --build build
+```
+
+In an existing clone run only `git submodule update --init`. Do not add `--recursive` (neither to `git clone` nor to
+`git submodule update`): it also fetches test repositories of the libraries, which the build does not need, and one of
+them can only be fetched over SSH with GitHub key.
 
 ### Result
 
@@ -147,7 +168,7 @@ then `sudo udevadm control --reload` and replug the analyzer.
 With project bootloader:
 
 ```
-python tools/dla16_flash.py firmware build/dla16_firmware.bin
+python tools/dla16_flash.py mcu build/dla16_firmware.bin
 ```
 
 The update takes about 10 seconds.
@@ -167,11 +188,11 @@ This takes a few minutes. At the end, unplug the analyzer and plug it in again.
 With project bootloader:
 
 ```
-python tools/dla16_flash.py firmware DLA32_V1.1_26052116.bin
+python tools/dla16_flash.py mcu DLA32_V1.1_26052116.bin
 ```
 
 The script installs MCU firmware from FNIRSI firmware file; FPGA firmware on the analyzer stays as it is. FNIRSI
-firmware then runs as before; the bootloader stays, and `firmware` installs project firmware again at any time.
+firmware then runs as before; the bootloader stays, and `mcu` installs project firmware again at any time.
 
 With FNIRSI bootloader:
 
@@ -288,18 +309,18 @@ On an analyzer that has project bootloader, the bootloader installer puts the bo
 example a newer one. The build makes `build/dla16_installer.bin` next to the bootloader and the firmware. Do not unplug
 the analyzer while the script runs.
 
-1. Install the installer like a firmware:
+1. Install the installer like MCU firmware:
 
    ```
-   python tools/dla16_flash.py firmware build/dla16_installer.bin
+   python tools/dla16_flash.py mcu build/dla16_installer.bin
    ```
 
 2. The script waits until the analyzer answers from the new bootloader and ends with "Bootloader installed. Now
-   install firmware: python tools/dla16_flash.py firmware FILE" and exit code 0.
+   install MCU firmware: python tools/dla16_flash.py mcu FILE" and exit code 0.
 3. Install the firmware:
 
    ```
-   python tools/dla16_flash.py firmware build/dla16_firmware.bin
+   python tools/dla16_flash.py mcu build/dla16_firmware.bin
    ```
 
 If the status light alternates red and blue, the installer failed. The script then ends with an error and exit code 1
@@ -325,12 +346,12 @@ case open").
    python tools/dla16_flash.py full installer_combined.bin
    ```
 
-3. If it works, the script ends with "Bootloader installed. Now install firmware: ...". Unplug the analyzer and plug it
+3. If it works, the script ends with "Bootloader installed. Now install MCU firmware: ...". Unplug the analyzer and plug it
    in again.
 4. Install project firmware (on Windows project bootloader may first need WinUSB as "WCH USB2.0 DEVICE"):
 
    ```
-   python tools/dla16_flash.py firmware build/dla16_firmware.bin
+   python tools/dla16_flash.py mcu build/dla16_firmware.bin
    ```
 
 If FNIRSI bootloader refuses the file or the installer does not start, FNIRSI bootloader stays in place: install FNIRSI
@@ -344,8 +365,8 @@ bootloader with the case open (see "Optional: project bootloader with case open"
   "Linux permissions".
 - "Windows switched analyzer to WCH's driver": the update worked; switch the driver back to WinUSB before the next
   update (see "Windows drivers").
-- "analyzer runs FNIRSI's bootloader" after `firmware` or `fpga`: nothing was written; use `full` (see "Project firmware").
-- A firmware that does not start: the analyzer stays in its bootloader, and `firmware` installs it again.
+- "analyzer runs FNIRSI's bootloader" after `mcu` or `fpga`: nothing was written; use `full` (see "Project firmware").
+- A firmware that does not start: the analyzer stays in its bootloader, and `mcu` installs it again.
 - Nothing answers at all: install the bootloader again (see "Optional: project bootloader with case open").
 
 ## Licence

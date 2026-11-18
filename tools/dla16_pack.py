@@ -1,11 +1,11 @@
 # SPDX-License-Identifier: MIT
-"""Combine own MCU firmware with FPGA image of FNIRSI's firmware file.
+"""Combine project MCU firmware with FPGA image of FNIRSI's firmware file.
 
 usage: python -B -I dla16_pack.py pack --mcu build/dla16_firmware.bin --vendor DLA32_V1.1_26052116.bin -o combined.bin
        python -B -I dla16_pack.py info FILE
        python -B -I dla16_pack.py unpack FILE [-d DIR]
 
-pack     writes a firmware file in FNIRSI's container format: own MCU image, FPGA image from --vendor file.
+pack     writes a firmware file in FNIRSI's container format: project MCU image, FPGA image from --vendor file.
          Everything else is copied from --vendor file (names, offsets, layout, padding); only size and
          last-byte fields of MCU part are recomputed. FPGA image must be a known one for --model (default 16).
 info     prints parts of a container: name, offset, size, last byte, CRC-32.
@@ -164,8 +164,8 @@ def command_unpack(args):
 def make_parser():
     parser = argparse.ArgumentParser(prog="dla16_pack.py", description=__doc__.split("\n")[0])
     commands = parser.add_subparsers(dest="command", required=True)
-    pack = commands.add_parser("pack", help="combine own MCU image with FPGA image of vendor file")
-    pack.add_argument("--mcu", required=True, help="own MCU image, for example build/dla16_firmware.bin")
+    pack = commands.add_parser("pack", help="combine project MCU image with FPGA image of vendor file")
+    pack.add_argument("--mcu", required=True, help="project MCU image, for example build/dla16_firmware.bin")
     pack.add_argument("--vendor", required=True, help="vendor firmware file holding FPGA image")
     pack.add_argument("-o", "--output", required=True, help="combined file to write")
     pack.add_argument("--model", type=int, choices=(16, 32), default=16, help="channel count of analyzer")

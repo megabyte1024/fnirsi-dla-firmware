@@ -1,33 +1,33 @@
 # SPDX-License-Identifier: MIT
-"""Install own bootloader and firmware on FNIRSI DLA-16 logic analyzer.
+"""Install project bootloader and firmware on FNIRSI DLA-16 logic analyzer.
 
 usage: python dla16_flash.py status
-       python dla16_flash.py firmware FILE
+       python dla16_flash.py mcu FILE
        python dla16_flash.py bootloader BOOTLOADER.bin FIRMWARE.bin
        python dla16_flash.py full FILE [--force] [--rewrite]
        python dla16_flash.py fpga FILE [--force] [--rewrite]
 
 status       show what runs on analyzer: firmware version and whose firmware it is, or which bootloader
-firmware     install firmware FILE over USB through own bootloader (case stays closed). FILE: own firmware
-             image, or FNIRSI's firmware file (for example DLA32_V1.1_26052116.bin) to put FNIRSI's
-             firmware back; its FPGA part is not sent, FPGA image on analyzer stays as it is.
-             FNIRSI's bootloader keeps new firmware only together with FPGA image: there, use 'full'.
-             Bootloader installer (build/dla16_installer.bin): writes own bootloader with case closed;
-             script then says to install firmware and ends without error.
-bootloader   once, with case open: write own bootloader through WCH's chip bootloader (SW4 bridged
+mcu          install MCU firmware from FILE over USB through project bootloader (case stays closed). FILE:
+             project firmware, or FNIRSI's firmware file (for example DLA32_V1.1_26052116.bin) to put
+             FNIRSI's MCU firmware back; its FPGA part is not sent, FPGA image on analyzer stays as it is.
+             FNIRSI's bootloader installs MCU firmware only together with FPGA image: there, use 'full'.
+             Bootloader installer (build/dla16_installer.bin): writes project bootloader with case closed;
+             script then says to install MCU firmware and ends without error.
+bootloader   once, with case open: write project bootloader through WCH's chip bootloader (SW4 bridged
              while USB cable is plugged in), then install firmware. Replaces FNIRSI's bootloader for good.
 full         install MCU part, then FPGA part, of firmware file. FILE: FNIRSI's firmware file or one
-             made by dla16_pack.py. Own bootloader: parts one
+             made by dla16_pack.py. Project bootloader: parts one
              after another, both verified. FNIRSI's bootloader: both parts in one transfer, firmware started
              first each time; FPGA image cannot be read back there, so it is not verified. At end unplug
              analyzer and plug it in once: FPGA image loads only at power-up.
-fpga         same for FPGA part only, through own bootloader. FILE: firmware file (its FPGA part is taken)
+fpga         same for FPGA part only, through project bootloader. FILE: firmware file (its FPGA part is taken)
              or raw FPGA image.
 --force      write FPGA image that is not known, or onto flash chip with other id. FPGA image of
              other model is always refused.
 --rewrite    write FPGA image even if analyzer holds it already (FNIRSI's bootloader always writes it).
 
-firmware, full and fpga: when USB drops during transfer, script waits up to 60 s for analyzer to return,
+mcu, full and fpga: when USB drops during transfer, script waits up to 60 s for analyzer to return,
 then starts same image again from its start, at most 3 attempts per image. FNIRSI's bootloader: any
 failure starts whole transfer again from firmware, at most 8 attempts in all.
 
@@ -63,7 +63,7 @@ RAW_IMAGE_WIRE_NAME = "MCU_V1.1.bin"
 RAW_FPGA_WIRE_NAME = "FPGA_V2.0.bin"
 OWN_MARK = b"megabyte"
 INSTALLER_MARK = b"DLA16-BOOTLOADER-INSTALLER"
-BOOTLOADER_INSTALLED = "Bootloader installed. Now install firmware: python tools/dla16_flash.py firmware FILE"
+BOOTLOADER_INSTALLED = "Bootloader installed. Now install MCU firmware: python tools/dla16_flash.py mcu FILE"
 OWN_MARK_AT = 9
 BUSY_AT = OWN_MARK_AT + len(OWN_MARK)
 READY_WAIT_S = 10
@@ -254,7 +254,7 @@ def describe(reply):
         return "FNIRSI's bootloader running"
     if not application_running(reply):
         return "bootloader running (waiting for firmware)"
-    whose = "own firmware" if own_firmware(reply) else "FNIRSI's firmware"
+    whose = "project firmware" if own_firmware(reply) else "FNIRSI's firmware"
     return f"{whose} {reply[4]}.{reply[5]} running"
 
 
@@ -292,7 +292,7 @@ def installer_finished(reply):
     if application_running(reply):
         return False
     if not waits_in_own_bootloader(reply):
-        raise installer_failure(f"analyzer came back in {describe(reply)}, not in own bootloader")
+        raise installer_failure(f"analyzer came back in {describe(reply)}, not in project bootloader")
     print(BOOTLOADER_INSTALLED)
     return True
 
@@ -372,7 +372,7 @@ def reconnect(dla, reason):
     require_own_bootloader(reply)
     store_selection(dla, bootloader=True)
     time.sleep(PHASE_PAUSE_S)
-    print("  analyzer is back in its own bootloader")
+    print("  analyzer is back in project bootloader")
 
 
 def send_mcu_image(dla, wire_name, image, command):
@@ -414,7 +414,7 @@ def install_firmware(path, dla=None):
         if fnirsi_bootloader(reply):
             leave_foreign_bootloader(dla, FlashError(FNIRSI_NEEDS_FPGA_IMAGE))
         time.sleep(PHASE_PAUSE_S)
-        send_mcu_image(dla, wire_name, image, "firmware")
+        send_mcu_image(dla, wire_name, image, "mcu")
         time.sleep(PHASE_PAUSE_S)
         installer = is_installer(image)
         reply = start_written_image(dla, installer, "Starting new firmware ...")
@@ -423,7 +423,7 @@ def install_firmware(path, dla=None):
         if installer and installer_finished(reply):
             return
         if not application_running(reply):
-            raise FlashError("firmware did not start; analyzer waits in its bootloader, run 'firmware' again")
+            raise FlashError("firmware did not start; analyzer waits in its bootloader, run 'mcu' again")
         wait_until_ready(dla, reply)
     finally:
         dla.close()
@@ -570,8 +570,8 @@ def require_own_bootloader(reply):
     if fnirsi_bootloader(reply):
         raise FlashError("analyzer now runs FNIRSI's bootloader; nothing more written")
     if mark == FNIRSI_BOOTLOADER_MARK:
-        raise FlashError(f"analyzer runs older build of own bootloader without FPGA support (byte 9 of version "
-                         f"answer is 0, answer of {len(reply)} bytes): this script writes only through current own "
+        raise FlashError(f"analyzer runs older build of project bootloader without FPGA support (byte 9 of version "
+                         f"answer is 0, answer of {len(reply)} bytes): this script writes only through current project "
                          "bootloader or FNIRSI's bootloader; nothing written")
     if mark != OUR_BOOTLOADER_MARK:
         raise FlashError(f"analyzer runs unknown bootloader (byte 9 of version answer is {mark}); nothing written")
@@ -976,7 +976,7 @@ def update_through_bootloader(dla, mcu, fpga, force, rewrite, command):
             if not application_running(reply):
                 if is_installer(mcu[0]) and waits_in_own_bootloader(reply):
                     raise FlashError("bootloader installed, but FPGA image is not written yet: install firmware "
-                                     f"with 'firmware', then run '{command}' again")
+                                     f"with 'mcu', then run '{command}' again")
                 raise FlashError(f"firmware did not start; analyzer waits in its bootloader, run '{command}' again")
             reply = enter_bootloader(dla)
     store_selection(dla, bootloader=True)
@@ -994,7 +994,7 @@ def update_through_bootloader(dla, mcu, fpga, force, rewrite, command):
     if not application_running(reply):
         if had_firmware:
             raise FlashError(f"firmware did not start; analyzer waits in its bootloader, run '{command}' again")
-        print("No firmware installed: analyzer waits in its bootloader. Install firmware with 'firmware'.")
+        print("No firmware installed: analyzer waits in its bootloader. Install MCU firmware with 'mcu'.")
         return
     wait_until_ready(dla, reply)
 
@@ -1156,7 +1156,7 @@ def bootloader_image(path):
 def install_bootloader(boot_path, firmware_path):
     image = bootloader_image(boot_path)
     firmware_image(firmware_path)
-    print(f"Own bootloader {os.path.basename(boot_path)}, {len(image)} bytes, then firmware "
+    print(f"Project bootloader {os.path.basename(boot_path)}, {len(image)} bytes, then firmware "
           f"{os.path.basename(firmware_path)}.")
     print()
     print("1. Unplug USB cable from analyzer.")
@@ -1213,10 +1213,10 @@ def main(argv):
     try:
         if command == "status" and not files and not options:
             show_status()
-        elif command == "firmware" and len(files) <= 1 and not options:
+        elif command == "mcu" and len(files) <= 1 and not options:
             if not files:
                 print(__doc__)
-                print(f"'firmware' needs firmware file: python {os.path.basename(__file__)} firmware FILE")
+                print(f"'mcu' needs MCU firmware file: python {os.path.basename(__file__)} mcu FILE")
                 return 1
             install_firmware(files[0])
         elif command == "bootloader" and len(files) <= 2 and not options:
