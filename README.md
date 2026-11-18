@@ -72,14 +72,17 @@ Unpack it in any folder and add `-Dxpack_bin=<its bin folder>` to the first `cma
 this may be left out when `riscv-none-elf-gcc` is on your `PATH`.
 
 ```sh
-git clone --recursive https://github.com/megabyte1024/fnirsi-dla-firmware.git
+git clone https://github.com/megabyte1024/fnirsi-dla-firmware.git
 cd fnirsi-dla-firmware
+git submodule update --init
 cmake -S . -B build -G Ninja -DCMAKE_TOOLCHAIN_FILE=cmake/riscv-none-elf.cmake -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ```
 
-The commands are the same on Linux and Windows (in Command Prompt or PowerShell). In an existing clone run
-`git submodule update --init` instead of cloning again.
+The commands are the same on Linux and Windows (in Command Prompt or PowerShell). In an existing clone run only
+`git submodule update --init`. Do not add `--recursive` (neither to `git clone` nor to `git submodule update`): it also
+fetches test repositories of the libraries, which the build does not need, and one of them can only be fetched over SSH
+with GitHub key.
 
 ### Result
 
