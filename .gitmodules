@@ -1,0 +1,6 @@
+[submodule "third_party/wch-ch56x-lib"]
+	path = third_party/wch-ch56x-lib
+	url = https://github.com/hydrausb3/wch-ch56x-lib
+[submodule "third_party/wch-ch56x-bsp"]
+	path = third_party/wch-ch56x-bsp
+	url = https://github.com/hydrausb3/wch-ch56x-bsp

@@ -1,0 +1,46 @@
+diff --git a/usb/usb30.c b/usb/usb30.c
+index 5d17c48..dce0387 100644
+--- a/usb/usb30.c
++++ b/usb/usb30.c
+@@ -425,6 +425,8 @@ usb30_standard_req_handler(void)
+ 		break;
+ 	case USB_CLEAR_FEATURE: /* TODO usb30_standard_req_handler() code
+                              USB_CLEAR_FEATURE */
++		if ((UsbSetupBuf->bRequestType & 0x1F) == 0x02 && UsbSetupBuf->wValue.bw.bb1 == 0 && UsbSetupBuf->wValue.bw.bb0 == 0)
++			usb30_clear_endpoint_halt(UsbSetupBuf->wIndex.bw.bb1);
+ 		break;
+ 	case USB_SET_FEATURE: /* TODO usb30_standard_req_handler() code
+                            USB_SET_FEATURE */
+@@ -705,6 +707,10 @@ usb30_ep_out_handler(uint8_t endp_num)
+  */
+ void usb30_itp_callback(uint32_t ITPCounter) {}
+ 
++__attribute__((weak)) bool usb30_take_ep_in(uint8_t endp_num) { return false; }
++
++__attribute__((weak)) void usb30_clear_endpoint_halt(uint8_t endpoint_address) {}
++
+ void usb3_endp_tx_ready(uint8_t endp_num, uint16_t size)
+ {
+ 	volatile USB_ENDPOINT* endp = &usb3_backend_current_device->endpoints.tx[endp_num];
+@@ -991,6 +997,8 @@ __attribute__((interrupt("WCH-Interrupt-fast"))) void USBSS_IRQHandler(void)
+ 			}
+ 			return;
+ 		}
++		if (usb30_take_ep_in(ep))
++			return;
+ 		switch (ep)
+ 		{
+ 		case 1:
+diff --git a/usb/usb30.h b/usb/usb30.h
+index e31544f..ae9b4b3 100644
+--- a/usb/usb30.h
++++ b/usb/usb30.h
+@@ -370,6 +370,8 @@ void usb3_endp_tx_ready(uint8_t endp_num, uint16_t size);
+ 
+ __attribute__((interrupt("WCH-Interrupt-fast"))) void LINK_IRQHandler(void);
+ __attribute__((interrupt("WCH-Interrupt-fast"))) void USBSS_IRQHandler(void);
++bool usb30_take_ep_in(uint8_t endp_num);
++void usb30_clear_endpoint_halt(uint8_t endpoint_address);
+ #ifdef __cplusplus
+ }
+ #endif

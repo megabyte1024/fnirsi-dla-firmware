@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: MIT
+if(NOT IMAGE)
+  message(FATAL_ERROR "usage: cmake -DIMAGE=<dla16_installer.bin> -P check_installer_mark.cmake")
+endif()
+if(NOT EXISTS ${IMAGE})
+  message(FATAL_ERROR "${IMAGE}: no such file")
+endif()
+
+set(marks "DLA16-BOOTLOADER-INSTALLER" "megabyte")
+file(READ ${IMAGE} image_hex HEX)
+foreach(mark IN LISTS marks)
+  string(HEX "${mark}" mark_hex)
+  string(FIND "${image_hex}" "${mark_hex}" found)
+  if(found EQUAL -1)
+    message(FATAL_ERROR "${IMAGE} does not hold the text '${mark}': tools could not recognise the bootloader installer")
+  endif()
+endforeach()
