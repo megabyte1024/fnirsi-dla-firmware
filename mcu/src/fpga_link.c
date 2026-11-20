@@ -121,6 +121,39 @@ void fpga_link_set_pb22(uint8_t level) {
   }
 }
 
+void fpga_link_set_pb24(uint8_t level) {
+  if (level != 0) {
+    R32_PB_OUT |= kPinPb24;
+  } else {
+    R32_PB_CLR = kPinPb24;
+  }
+}
+
+void fpga_link_set_hspi_enable(uint8_t enable) {
+  if (enable != 0) {
+    R8_HSPI_CTRL |= kCtrlEnable;
+  } else {
+    R8_HSPI_CTRL &= (uint8_t)~kCtrlEnable;
+  }
+}
+
+void fpga_link_read_pins(uint32_t* port_a, uint32_t* port_b, uint32_t* direction_a, uint32_t* direction_b) {
+  *port_a = R32_PA_PIN;
+  *port_b = R32_PB_PIN;
+  *direction_a = R32_PA_DIR;
+  *direction_b = R32_PB_DIR;
+}
+
+int fpga_link_set_control_output(uint8_t pin, uint8_t level) {
+  if (pin > 31u || (kPortAOutputs & (1u << pin)) == 0) return -1;
+  if (level != 0) {
+    R32_PA_OUT |= 1u << pin;
+  } else {
+    R32_PA_CLR = 1u << pin;
+  }
+  return 0;
+}
+
 void fpga_link_pulse_pb23(void) {
   fpga_link_set_pb23(0);
   fpga_link_set_pb23(1);

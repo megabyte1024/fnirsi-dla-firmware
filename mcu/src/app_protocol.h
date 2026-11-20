@@ -11,7 +11,7 @@ struct FpgaQueue;
 struct FpgaRunner;
 
 #define APP_VERSION_MAJOR 0u
-#define APP_VERSION_MINOR 34u
+#define APP_VERSION_MINOR 36u
 #define APP_REPLY_BYTES 64u
 #define APP_VENDOR_REPLY_BYTES 24u
 #define APP_OWN_MARK "megabyte"

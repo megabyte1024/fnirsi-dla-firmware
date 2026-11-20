@@ -1,4 +1,7 @@
 # SPDX-License-Identifier: MIT
+
+cmake_minimum_required(VERSION 3.30...4.4)
+
 if(NOT INPUT OR NOT OUTPUT)
   message(FATAL_ERROR "usage: cmake -DINPUT=<bootloader.bin> -DOUTPUT=<source.c> -P embed_bootloader.cmake")
 endif()

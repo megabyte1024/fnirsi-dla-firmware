@@ -60,7 +60,8 @@ bootloader is available for tests now.
 
 Common to every platform:
 
-- CMake 3.25 or newer and Ninja
+- CMake 3.30 or newer and Ninja. KDE neon's own CMake is new enough; Ubuntu 24.04's own `cmake` package (3.28) is not,
+  there install a newer one, for example with `sudo snap install cmake --classic`
 - xPack GNU RISC-V Embedded GCC (built and tested with 15.2.0), its `bin` folder on `PATH`
 - Git, to fetch the two USB library submodules in `third_party/`
 - Python 3.10 or newer, to install the firmware on the analyzer (packages: see "Install")
@@ -368,6 +369,14 @@ bootloader with the case open (see "Optional: project bootloader with case open"
 - "analyzer runs FNIRSI's bootloader" after `mcu` or `fpga`: nothing was written; use `full` (see "Project firmware").
 - A firmware that does not start: the analyzer stays in its bootloader, and `mcu` installs it again.
 - Nothing answers at all: install the bootloader again (see "Optional: project bootloader with case open").
+
+## Repository layout
+
+- `mcu/`: MCU firmware, bootloader and bootloader installer (C for the CH569; built by the root `CMakeLists.txt`).
+- `fpga/`: FPGA design for the analyzer's Pango PGL22G (not written yet; see `fpga/README.md`).
+- `tools/`: install scripts `dla16_flash.py` and `dla16_pack.py`.
+- `cmake/`: toolchain file and build job limit.
+- `third_party/`: the two USB libraries (git submodules) and the patch the build applies to one of them.
 
 ## Licence
 

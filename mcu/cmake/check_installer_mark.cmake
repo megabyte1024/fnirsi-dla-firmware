@@ -1,4 +1,7 @@
 # SPDX-License-Identifier: MIT
+
+cmake_minimum_required(VERSION 3.30...4.4)
+
 if(NOT IMAGE)
   message(FATAL_ERROR "usage: cmake -DIMAGE=<dla16_installer.bin> -P check_installer_mark.cmake")
 endif()

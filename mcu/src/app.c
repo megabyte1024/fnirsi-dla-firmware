@@ -23,7 +23,13 @@ static volatile uint8_t use_usb3 = 0;
 
 static uint8_t usb_generation(void) { return use_usb3 ? 3u : 2u; }
 
-enum : uint8_t { kTestModeResetKeep = 16 };
+enum : uint8_t {
+  kTestModeResetKeep = 16,
+  kTestModePb24 = 20,
+  kTestModeHspiEnable = 21,
+  kTestModeReadPins = 22,
+  kTestModeControlOutput = 23,
+};
 
 static uint8_t model_kept_at_start;
 
@@ -136,6 +142,28 @@ static uint16_t usb3_test(const uint8_t* command, uint16_t length, uint8_t* repl
     reply[5] = model_kept_over_reset();
     reply[6] = (uint8_t)reset_cause();
     reply[7] = hardware.model;
+    return APP_REPLY_BYTES;
+  }
+  if (mode == kTestModePb24 || mode == kTestModeHspiEnable) {
+    const uint8_t level = length > 3 ? command[3] : 0u;
+    if (mode == kTestModePb24) {
+      fpga_link_set_pb24(level);
+    } else {
+      fpga_link_set_hspi_enable(level);
+    }
+    reply[3] = level;
+    return APP_REPLY_BYTES;
+  }
+  if (mode == kTestModeReadPins) {
+    uint32_t pins[4];
+    fpga_link_read_pins(&pins[0], &pins[1], &pins[2], &pins[3]);
+    for (i = 0; i < 4; ++i) put32(reply + 4 + 4 * i, pins[i]);
+    return APP_REPLY_BYTES;
+  }
+  if (mode == kTestModeControlOutput) {
+    const uint8_t pin = length > 3 ? command[3] : 0xFFu;
+    const uint8_t level = length > 4 ? command[4] : 0u;
+    reply[3] = fpga_link_set_control_output(pin, level) == 0 ? 1u : 0u;
     return APP_REPLY_BYTES;
   }
   if (mode == 7) blackbox_clear();
